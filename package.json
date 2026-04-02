@@ -3,16 +3,16 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/api",
     "packages/*"
   ],
   "scripts": {
-    "mobile": "npm run start --workspace=apps/mobile",
-    "mobile:android": "npm run android --workspace=apps/mobile",
+    "mobile": "cd apps/mobile && npx expo start",
+    "mobile:android": "cd apps/mobile && npx expo run:android",
     "api": "npm run dev --workspace=apps/api",
     "api:build": "npm run build --workspace=apps/api",
-    "lint": "npm run lint --workspaces",
-    "typecheck": "npm run typecheck --workspaces"
+    "install:mobile": "cd apps/mobile && npm install",
+    "install:all": "npm install && cd apps/mobile && npm install"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { verifyAuth, jsonResponse, errorResponse } from '@/lib/auth';
-import { analyzeReceiptImage } from '@/lib/openai';
+import { analyzeReceiptImage } from '@/lib/gemini';
 import { ScanResult } from '@finsnap/shared';
 
 export async function POST(request: NextRequest) {

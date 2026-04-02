@@ -1,11 +1,9 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ScannedLineItem, TransactionCategory, TransactionType } from '@finsnap/shared';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
-const SYSTEM_PROMPT = `You are a financial document analyzer specialized in extracting transaction information from receipts, bank statements, and invoices.
+const PROMPT = `You are a financial document analyzer specialized in extracting transaction information from receipts, bank statements, and invoices.
 
 Analyze the image and extract all financial transactions. For each transaction, provide:
 1. description: A brief description of the transaction
@@ -37,35 +35,19 @@ interface AIResponse {
 
 export async function analyzeReceiptImage(base64Image: string): Promise<ScannedLineItem[]> {
   try {
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: SYSTEM_PROMPT,
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Image}`,
-                detail: 'high',
-              },
-            },
-            {
-              type: 'text',
-              text: 'Extract all financial transactions from this image.',
-            },
-          ],
-        },
-      ],
-      max_tokens: 2000,
-      temperature: 0.1,
-    });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
-    const content = response.choices[0]?.message?.content;
+    const result = await model.generateContent([
+      PROMPT,
+      {
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: base64Image,
+        },
+      },
+    ]);
+
+    const content = result.response.text();
     if (!content) {
       throw new Error('No response from AI');
     }
