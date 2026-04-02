@@ -57,7 +57,44 @@ export default function RootLayout() {
               headerTintColor: colors.text,
               headerTitleStyle: { fontWeight: '600' },
             }}
-          />        </Stack>
+          />
+          <Stack.Screen
+            name="notifications"
+            options={{
+              title: 'Notifications',
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.text,
+              headerTitleStyle: { fontWeight: '600' },
+            }}
+          />
+          <Stack.Screen
+            name="privacy"
+            options={{
+              title: 'Privacy & Security',
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.text,
+              headerTitleStyle: { fontWeight: '600' },
+            }}
+          />
+          <Stack.Screen
+            name="help"
+            options={{
+              title: 'Help & Support',
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.text,
+              headerTitleStyle: { fontWeight: '600' },
+            }}
+          />
+          <Stack.Screen
+            name="about"
+            options={{
+              title: 'About',
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.text,
+              headerTitleStyle: { fontWeight: '600' },
+            }}
+          />
+        </Stack>
           </CurrencyProvider>
       </AuthProvider>
     </SafeAreaProvider>

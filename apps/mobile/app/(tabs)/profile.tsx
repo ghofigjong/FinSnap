@@ -49,17 +49,17 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
-        <View style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/notifications')}>
           <Ionicons name="notifications-outline" size={24} color={colors.textSecondary} />
           <Text style={styles.menuText}>Notifications</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/privacy')}>
           <Ionicons name="shield-outline" size={24} color={colors.textSecondary} />
           <Text style={styles.menuText}>Privacy & Security</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -71,17 +71,17 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </TouchableOpacity>
 
-        <View style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/help')}>
           <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />
           <Text style={styles.menuText}>Help & Support</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/about')}>
           <Ionicons name="information-circle-outline" size={24} color={colors.textSecondary} />
           <Text style={styles.menuText}>About</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.signOutContainer}>

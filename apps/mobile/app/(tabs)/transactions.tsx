@@ -38,6 +38,7 @@ interface EditState {
   amount: string;
   category: TransactionCategory;
   type: TransactionType;
+  date: string; // YYYY-MM-DD
 }
 
 export default function TransactionsScreen() {
@@ -94,6 +95,7 @@ export default function TransactionsScreen() {
       amount: String(t.amount),
       category: t.category,
       type: t.type,
+      date: t.date,
     });
   };
 
@@ -112,6 +114,7 @@ export default function TransactionsScreen() {
           amount,
           category: editState.category,
           type: editState.type,
+          date: editState.date,
         })
         .eq('id', editState.transaction.id);
       if (error) throw error;
@@ -254,6 +257,18 @@ export default function TransactionsScreen() {
                   keyboardType="decimal-pad"
                   placeholder="0.00"
                   placeholderTextColor={colors.textMuted}
+                />
+
+                {/* Date */}
+                <Text style={styles.fieldLabel}>Date</Text>
+                <TextInput
+                  style={styles.fieldInput}
+                  value={editState.date}
+                  onChangeText={v => setEditState(s => s ? { ...s, date: v } : s)}
+                  placeholder="YYYY-MM-DD"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="numbers-and-punctuation"
+                  maxLength={10}
                 />
 
                 {/* Category */}
