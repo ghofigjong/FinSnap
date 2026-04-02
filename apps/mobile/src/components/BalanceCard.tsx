@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { formatCurrency } from '@finsnap/shared';
 import { colors, borderRadius, fontSize, fontWeight, spacing } from '../constants/theme';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface BalanceCardProps {
   totalIncome: number;
@@ -9,6 +10,7 @@ interface BalanceCardProps {
 }
 
 export function BalanceCard({ totalIncome, totalExpenses }: BalanceCardProps) {
+  const { currency } = useCurrency();
   const balance = totalIncome - totalExpenses;
   const balanceColor = balance >= 0 ? colors.income : colors.expense;
 
@@ -16,7 +18,7 @@ export function BalanceCard({ totalIncome, totalExpenses }: BalanceCardProps) {
     <View style={styles.container}>
       <Text style={styles.label}>Current Balance</Text>
       <Text style={[styles.balance, { color: balanceColor }]}>
-        {formatCurrency(balance)}
+        {formatCurrency(balance, currency)}
       </Text>
       <View style={styles.row}>
         <View style={styles.stat}>
@@ -24,7 +26,7 @@ export function BalanceCard({ totalIncome, totalExpenses }: BalanceCardProps) {
           <View>
             <Text style={styles.statLabel}>Income</Text>
             <Text style={[styles.statValue, { color: colors.income }]}>
-              +{formatCurrency(totalIncome)}
+              +{formatCurrency(totalIncome, currency)}
             </Text>
           </View>
         </View>
@@ -34,7 +36,7 @@ export function BalanceCard({ totalIncome, totalExpenses }: BalanceCardProps) {
           <View>
             <Text style={styles.statLabel}>Expenses</Text>
             <Text style={[styles.statValue, { color: colors.expense }]}>
-              -{formatCurrency(totalExpenses)}
+              -{formatCurrency(totalExpenses, currency)}
             </Text>
           </View>
         </View>

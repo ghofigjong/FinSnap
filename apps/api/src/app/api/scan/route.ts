@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { verifyAuth, jsonResponse, errorResponse } from '@/lib/auth';
-import { analyzeReceiptImage } from '@/lib/gemini';
+import { analyzeImage, ScanProvider } from '@/lib/scanner';
 import { ScanResult } from '@finsnap/shared';
 
 export async function POST(request: NextRequest) {
@@ -11,22 +11,16 @@ export async function POST(request: NextRequest) {
       return errorResponse(authError || 'Unauthorized', 401);
     }
 
-    // Get the image from request body
     const body = await request.json();
-    const { image } = body;
+    const { image, provider = 'gemini', apiKey = '', geminiModel } = body;
 
     if (!image) {
       return errorResponse('No image provided');
     }
 
-    // Analyze the image with AI
-    const items = await analyzeReceiptImage(image);
+    const items = await analyzeImage(image, provider as ScanProvider, apiKey, geminiModel);
 
-    const result: ScanResult = {
-      success: true,
-      items,
-    };
-
+    const result: ScanResult = { success: true, items };
     return jsonResponse(result);
   } catch (error: any) {
     console.error('Scan error:', error);

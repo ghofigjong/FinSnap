@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,20 +11,30 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import { apiRequest } from '../../src/lib/api';
 import { Button } from '../../src/components';
 import { ScannedLineItem, ScanResult, formatCurrency } from '@finsnap/shared';
+import { getAISettings, isAISettingsConfigured, getApiKeyForProvider, AISettings } from '../../src/lib/aiSettings';
+import { useCurrency } from '../../src/contexts/CurrencyContext';
 import { colors, fontSize, fontWeight, spacing, borderRadius } from '../../src/constants/theme';
 
 export default function ScanScreen() {
   const { session } = useAuth();
+  const { currency } = useCurrency();
   const [image, setImage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<ScannedLineItem[]>([]);
   const [saving, setSaving] = useState(false);
+  const [aiSettings, setAiSettings] = useState<AISettings | null>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      getAISettings().then(setAiSettings);
+    }, [])
+  );
 
   const pickImage = async (useCamera: boolean) => {
     const permission = useCamera
@@ -63,11 +73,30 @@ export default function ScanScreen() {
       return;
     }
 
+    const settings = await getAISettings();
+
+    if (!isAISettingsConfigured(settings)) {
+      Alert.alert(
+        'AI Not Configured',
+        'Please set up your AI provider and API key in Settings before scanning.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Go to Settings', onPress: () => router.push('/settings') },
+        ]
+      );
+      return;
+    }
+
     setScanning(true);
     try {
       const response = await apiRequest<ScanResult>('/api/scan', {
         method: 'POST',
-        body: { image: base64 },
+        body: {
+          image: base64,
+          provider: settings.provider,
+          apiKey: getApiKeyForProvider(settings),
+          geminiModel: settings.geminiModel,
+        },
         token: session.access_token,
       });
 
@@ -90,7 +119,7 @@ export default function ScanScreen() {
     try {
       const transactions = results.map((item) => ({
         user_id: session.user.id,
-        amount: item.amount,
+        amount: Math.abs(item.amount),
         type: item.type,
         category: item.category,
         description: item.description,
@@ -178,7 +207,7 @@ export default function ScanScreen() {
                     ]}
                   >
                     {item.type === 'income' ? '+' : '-'}
-                    {formatCurrency(item.amount)}
+                    {formatCurrency(Math.abs(item.amount), currency)}
                   </Text>
                 </View>
               ))}

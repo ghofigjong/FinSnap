@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -43,11 +43,11 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Account</Text>
 
-        <View style={styles.menuItem}>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/edit-profile')}>
           <Ionicons name="person-outline" size={24} color={colors.textSecondary} />
           <Text style={styles.menuText}>Edit Profile</Text>
           <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-        </View>
+        </TouchableOpacity>
 
         <View style={styles.menuItem}>
           <Ionicons name="notifications-outline" size={24} color={colors.textSecondary} />
@@ -64,6 +64,12 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>App</Text>
+
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/settings')}>
+          <Ionicons name="settings-outline" size={24} color={colors.textSecondary} />
+          <Text style={styles.menuText}>AI Settings</Text>
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+        </TouchableOpacity>
 
         <View style={styles.menuItem}>
           <Ionicons name="help-circle-outline" size={24} color={colors.textSecondary} />

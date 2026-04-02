@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Transaction, CATEGORY_ICONS, formatCurrency, formatDate } from '@finsnap/shared';
 import { colors, borderRadius, fontSize, fontWeight, spacing } from '../constants/theme';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -10,6 +11,7 @@ interface TransactionCardProps {
 }
 
 export function TransactionCard({ transaction, onPress }: TransactionCardProps) {
+  const { currency } = useCurrency();
   const isExpense = transaction.type === 'expense';
   const amountColor = isExpense ? colors.expense : colors.income;
   const amountPrefix = isExpense ? '-' : '+';
@@ -35,7 +37,7 @@ export function TransactionCard({ transaction, onPress }: TransactionCardProps) 
       </View>
       <View style={styles.amountContainer}>
         <Text style={[styles.amount, { color: amountColor }]}>
-          {amountPrefix}{formatCurrency(transaction.amount)}
+          {amountPrefix}{formatCurrency(transaction.amount, currency)}
         </Text>
         <Text style={styles.date}>{formatDate(transaction.date)}</Text>
       </View>

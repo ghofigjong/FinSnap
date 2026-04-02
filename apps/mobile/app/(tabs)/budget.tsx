@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useCurrency } from '../../src/contexts/CurrencyContext';
 import { supabase } from '../../src/lib/supabase';
 import {
   Budget,
@@ -28,6 +29,7 @@ interface BudgetWithSpent extends Budget {
 
 export default function BudgetScreen() {
   const { user } = useAuth();
+  const { currency } = useCurrency();
   const [budgets, setBudgets] = useState<BudgetWithSpent[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -143,7 +145,7 @@ export default function BudgetScreen() {
                     { color: isOverBudget ? colors.expense : colors.textSecondary },
                   ]}
                 >
-                  {isOverBudget ? 'Over budget!' : `${formatCurrency(remaining)} left`}
+                  {isOverBudget ? 'Over budget!' : `${formatCurrency(remaining, currency)} left`}
                 </Text>
               </View>
 
@@ -164,10 +166,10 @@ export default function BudgetScreen() {
 
               <View style={styles.budgetDetails}>
                 <Text style={styles.spentText}>
-                  Spent: <Text style={styles.spentAmount}>{formatCurrency(budget.spent)}</Text>
+                  Spent: <Text style={styles.spentAmount}>{formatCurrency(budget.spent, currency)}</Text>
                 </Text>
                 <Text style={styles.budgetText}>
-                  Budget: <Text style={styles.budgetAmount}>{formatCurrency(budget.amount)}</Text>
+                  Budget: <Text style={styles.budgetAmount}>{formatCurrency(budget.amount, currency)}</Text>
                 </Text>
               </View>
             </View>
