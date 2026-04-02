@@ -29,7 +29,14 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    if (response.status === 413) {
+      throw new Error('Image is too large. Please try a lower quality or smaller image.');
+    }
+    const error = await response.json().catch(() => ({
+      error: response.status >= 500
+        ? 'Server error — the image may be too large or the request timed out. Try again with a smaller image.'
+        : `Request failed (${response.status})`,
+    }));
     throw new Error(error.error || `HTTP error! status: ${response.status}`);
   }
 

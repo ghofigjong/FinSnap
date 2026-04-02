@@ -3,6 +3,8 @@ import { verifyAuth, jsonResponse, errorResponse } from '@/lib/auth';
 import { analyzeImage, ScanProvider } from '@/lib/scanner';
 import { ScanResult } from '@finsnap/shared';
 
+export const maxDuration = 30; // seconds (requires Vercel Pro for >10s)
+
 export async function POST(request: NextRequest) {
   try {
     // Verify authentication
@@ -11,7 +13,12 @@ export async function POST(request: NextRequest) {
       return errorResponse(authError || 'Unauthorized', 401);
     }
 
-    const body = await request.json();
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse('Request too large or malformed. Try a lower quality image.', 413);
+    }
     const { image, provider = 'gemini', apiKey = '', geminiModel } = body;
 
     if (!image) {

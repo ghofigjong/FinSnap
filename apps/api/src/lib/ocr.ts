@@ -68,11 +68,19 @@ function extractAmounts(text: string): number[] {
 }
 
 export async function analyzeWithOCR(base64Image: string): Promise<ScannedLineItem[]> {
-  const imageBuffer = Buffer.from(base64Image, 'base64');
+  let text: string;
 
-  const { data: { text } } = await Tesseract.recognize(imageBuffer, 'eng', {
-    logger: () => {}, // suppress progress logs
-  });
+  try {
+    const imageBuffer = Buffer.from(base64Image, 'base64');
+    const { data } = await Tesseract.recognize(imageBuffer, 'eng', {
+      logger: () => {},
+    });
+    text = data.text;
+  } catch (err: any) {
+    throw new Error(
+      'OCR is not available in cloud deployment. Please use Gemini or OpenAI instead \u2014 go to Profile \u2192 AI Settings to configure.'
+    );
+  }
 
   if (!text || text.trim().length < 10) {
     throw new Error('Could not extract readable text from image. Try a clearer photo.');
