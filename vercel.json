@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run api:build",
+  "buildCommand": "npm run build --workspace=apps/api",
   "outputDirectory": "apps/api/.next",
   "installCommand": "npm install",
   "framework": "nextjs"
