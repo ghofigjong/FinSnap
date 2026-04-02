@@ -8,6 +8,8 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  TextInput,
+  Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,17 +18,44 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { supabase } from '../../src/lib/supabase';
 import { apiRequest } from '../../src/lib/api';
 import { Button } from '../../src/components';
-import { ScannedLineItem, ScanResult, formatCurrency } from '@finsnap/shared';
+import { ScannedLineItem, ScanResult, formatCurrency, CATEGORY_LABELS, CATEGORY_ICONS, EXPENSE_CATEGORIES, INCOME_CATEGORIES, TransactionCategory } from '@finsnap/shared';
 import { getAISettings, isAISettingsConfigured, getApiKeyForProvider, AISettings } from '../../src/lib/aiSettings';
 import { useCurrency } from '../../src/contexts/CurrencyContext';
 import { colors, fontSize, fontWeight, spacing, borderRadius } from '../../src/constants/theme';
+
+interface EditableItem extends ScannedLineItem {
+  key: number;
+  selected: boolean;
+  editDescription: string;
+  editAmount: string;
+  editCategory: TransactionCategory;
+  isEditing: boolean;
+}
+
+function isTotal(item: ScannedLineItem): boolean {
+  return /\btotal\b/i.test(item.description);
+}
+
+function buildEditableItems(items: ScannedLineItem[]): EditableItem[] {
+  const hasTotals = items.some(isTotal);
+  return items.map((item, i) => ({
+    ...item,
+    key: i,
+    // Auto-deselect: line items when a total exists, or items with zero amount
+    selected: Math.abs(item.amount) > 0 && (hasTotals ? isTotal(item) : true),
+    editDescription: item.description,
+    editAmount: Math.abs(item.amount) > 0 ? String(Math.abs(item.amount)) : '',
+    editCategory: item.category,
+    isEditing: Math.abs(item.amount) === 0, // open editor immediately if amount unknown
+  }));
+}
 
 export default function ScanScreen() {
   const { session } = useAuth();
   const { currency } = useCurrency();
   const [image, setImage] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [results, setResults] = useState<ScannedLineItem[]>([]);
+  const [editableItems, setEditableItems] = useState<EditableItem[]>([]);
   const [saving, setSaving] = useState(false);
   const [aiSettings, setAiSettings] = useState<AISettings | null>(null);
 
@@ -35,6 +64,21 @@ export default function ScanScreen() {
       getAISettings().then(setAiSettings);
     }, [])
   );
+
+  const toggleSelect = (key: number) =>
+    setEditableItems(prev => prev.map(i => i.key === key ? { ...i, selected: !i.selected } : i));
+
+  const startEdit = (key: number) =>
+    setEditableItems(prev => prev.map(i => i.key === key ? { ...i, isEditing: true } : i));
+
+  const confirmEdit = (key: number) =>
+    setEditableItems(prev => prev.map(i => i.key === key ? { ...i, isEditing: false } : i));
+
+  const updateField = (key: number, field: 'editDescription' | 'editAmount', text: string) =>
+    setEditableItems(prev => prev.map(i => i.key === key ? { ...i, [field]: text } : i));
+
+  const updateCategory = (key: number, cat: TransactionCategory) =>
+    setEditableItems(prev => prev.map(i => i.key === key ? { ...i, editCategory: cat } : i));
 
   const pickImage = async (useCamera: boolean) => {
     const permission = useCamera
@@ -62,7 +106,7 @@ export default function ScanScreen() {
 
     if (!result.canceled && result.assets[0]) {
       setImage(result.assets[0].uri);
-      setResults([]);
+      setEditableItems([]);
       scanImage(result.assets[0].base64!);
     }
   };
@@ -101,7 +145,7 @@ export default function ScanScreen() {
       });
 
       if (response.success && response.items) {
-        setResults(response.items);
+        setEditableItems(buildEditableItems(response.items));
       } else {
         Alert.alert('Scan Failed', response.error || 'Could not extract items from image');
       }
@@ -113,16 +157,30 @@ export default function ScanScreen() {
   };
 
   const saveTransactions = async () => {
-    if (!session?.user?.id || results.length === 0) return;
+    const selected = editableItems.filter(i => i.selected);
+    if (!session?.user?.id || selected.length === 0) return;
+
+    // Validate amounts before hitting the DB
+    const invalid = selected.filter(i => {
+      const v = parseFloat(i.editAmount);
+      return !Number.isFinite(v) || v <= 0;
+    });
+    if (invalid.length > 0) {
+      Alert.alert(
+        'Invalid Amount',
+        `${invalid.length} item${invalid.length > 1 ? 's have' : ' has'} an amount of 0 or invalid. Please edit ${invalid.length > 1 ? 'them' : 'it'} before saving.`
+      );
+      return;
+    }
 
     setSaving(true);
     try {
-      const transactions = results.map((item) => ({
+      const transactions = selected.map((item) => ({
         user_id: session.user.id,
-        amount: Math.abs(item.amount),
+        amount: Math.abs(parseFloat(item.editAmount)),
         type: item.type,
-        category: item.category,
-        description: item.description,
+        category: item.editCategory,
+        description: item.editDescription.trim() || item.description,
         merchant: item.merchant || null,
         date: item.date,
       }));
@@ -131,12 +189,12 @@ export default function ScanScreen() {
 
       if (error) throw error;
 
-      Alert.alert('Success', `${results.length} transactions saved!`, [
+      Alert.alert('Success', `${selected.length} transaction${selected.length !== 1 ? 's' : ''} saved!`, [
         { text: 'OK', onPress: () => router.push('/(tabs)/transactions') },
       ]);
 
       setImage(null);
-      setResults([]);
+      setEditableItems([]);
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to save transactions');
     } finally {
@@ -186,44 +244,119 @@ export default function ScanScreen() {
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.scanningText}>Analyzing image with AI...</Text>
             </View>
-          ) : results.length > 0 ? (
+          ) : editableItems.length > 0 ? (
             <>
-              <Text style={styles.resultsTitle}>
-                Found {results.length} transaction{results.length > 1 ? 's' : ''}
-              </Text>
-
-              {results.map((item, index) => (
-                <View key={index} style={styles.resultItem}>
-                  <View style={styles.resultLeft}>
-                    <Text style={styles.resultDescription}>{item.description}</Text>
-                    <Text style={styles.resultCategory}>
-                      {item.category} • {item.merchant || 'Unknown'}
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.resultAmount,
-                      { color: item.type === 'income' ? colors.income : colors.expense },
-                    ]}
-                  >
-                    {item.type === 'income' ? '+' : '-'}
-                    {formatCurrency(Math.abs(item.amount), currency)}
+              <View style={styles.resultsTitleRow}>
+                <Text style={styles.resultsTitle}>
+                  {editableItems.filter(i => i.selected).length} of {editableItems.length} selected
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    const allSelected = editableItems.every(i => i.selected);
+                    setEditableItems(prev => prev.map(i => ({ ...i, selected: !allSelected })));
+                  }}
+                >
+                  <Text style={styles.selectAllText}>
+                    {editableItems.every(i => i.selected) ? 'Deselect All' : 'Select All'}
                   </Text>
+                </TouchableOpacity>
+              </View>
+
+              {editableItems.map((item) => (
+                <View key={item.key} style={[styles.resultItem, item.selected && styles.resultItemSelected]}>
+                  {item.isEditing ? (
+                    <View style={styles.editRow}>
+                      <TextInput
+                        style={styles.editInput}
+                        value={item.editDescription}
+                        onChangeText={t => updateField(item.key, 'editDescription', t)}
+                        placeholder="Description"
+                        placeholderTextColor={colors.textMuted}
+                      />
+                      <View style={styles.editAmountRow}>
+                        <TextInput
+                          style={[styles.editInput, styles.editAmountInput]}
+                          value={item.editAmount}
+                          onChangeText={t => updateField(item.key, 'editAmount', t)}
+                          keyboardType="decimal-pad"
+                          placeholder="0.00"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                        <TouchableOpacity style={styles.confirmBtn} onPress={() => confirmEdit(item.key)}>
+                          <Ionicons name="checkmark" size={20} color={colors.white} />
+                        </TouchableOpacity>
+                      </View>
+                      {/* Category picker */}
+                      <Text style={styles.editLabel}>Category</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+                        {[...(item.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES)].map(cat => (
+                          <TouchableOpacity
+                            key={cat}
+                            style={[
+                              styles.categoryChip,
+                              item.editCategory === cat && styles.categoryChipSelected,
+                            ]}
+                            onPress={() => updateCategory(item.key, cat as TransactionCategory)}
+                          >
+                            <Text style={styles.categoryChipIcon}>{CATEGORY_ICONS[cat]}</Text>
+                            <Text style={[
+                              styles.categoryChipText,
+                              item.editCategory === cat && styles.categoryChipTextSelected,
+                            ]}>{CATEGORY_LABELS[cat]}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.resultRow}
+                      onPress={() => toggleSelect(item.key)}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name={item.selected ? 'checkbox' : 'square-outline'}
+                        size={22}
+                        color={item.selected ? colors.primary : colors.textMuted}
+                      />
+                      <View style={styles.resultLeft}>
+                        <Text style={styles.resultDescription}>{item.editDescription}</Text>
+                        <Text style={styles.resultCategory}>
+                          {CATEGORY_ICONS[item.editCategory]} {CATEGORY_LABELS[item.editCategory] || item.editCategory}
+                          {item.merchant ? ` • ${item.merchant}` : ''}
+                        </Text>
+                      </View>
+                      <Text style={[
+                        styles.resultAmount,
+                        { color: item.type === 'income' ? colors.income : colors.expense },
+                      ]}>
+                        {item.type === 'income' ? '+' : '-'}
+                        {formatCurrency(Math.abs(parseFloat(item.editAmount) || item.amount), currency)}
+                      </Text>
+                      <TouchableOpacity
+                        style={styles.editBtn}
+                        onPress={() => startEdit(item.key)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Ionicons name="pencil-outline" size={16} color={colors.textMuted} />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  )}
                 </View>
               ))}
 
               <View style={styles.actions}>
                 <Button
-                  title="Save All"
+                  title={`Save Selected (${editableItems.filter(i => i.selected).length})`}
                   onPress={saveTransactions}
                   loading={saving}
+                  disabled={editableItems.filter(i => i.selected).length === 0}
                 />
                 <Button
                   title="Scan Another"
                   variant="outline"
                   onPress={() => {
                     setImage(null);
-                    setResults([]);
+                    setEditableItems([]);
                   }}
                 />
               </View>
@@ -236,7 +369,7 @@ export default function ScanScreen() {
                 variant="outline"
                 onPress={() => {
                   setImage(null);
-                  setResults([]);
+                  setEditableItems([]);
                 }}
               />
             </View>
@@ -321,23 +454,109 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.md,
   },
+  resultsTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   resultsTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.semibold,
     color: colors.text,
-    marginBottom: spacing.md,
+  },
+  selectAllText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: '600',
   },
   resultItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
-    padding: spacing.md,
     marginBottom: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  resultItemSelected: {
+    borderColor: colors.primary,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    gap: spacing.sm,
   },
   resultLeft: {
     flex: 1,
+  },
+  editRow: {
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  editInput: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.text,
+    fontSize: fontSize.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  editAmountRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  editAmountInput: {
+    flex: 1,
+  },
+  confirmBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBtn: {
+    padding: spacing.xs,
+  },
+  editLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
+    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  categoryScroll: {
+    marginBottom: spacing.xs,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.card,
+    borderRadius: borderRadius.full,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    marginRight: spacing.xs,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  categoryChipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  categoryChipIcon: {
+    fontSize: 14,
+  },
+  categoryChipText: {
+    color: colors.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: '500',
+  },
+  categoryChipTextSelected: {
+    color: colors.primary,
+    fontWeight: '700',
   },
   resultDescription: {
     fontSize: fontSize.md,

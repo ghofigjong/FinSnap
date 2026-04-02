@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('User error:', error);
+    console.error('[user] Error:', { message: error?.message, stack: error?.stack });
     return errorResponse(error.message || 'Failed to get user', 500);
   }
 }

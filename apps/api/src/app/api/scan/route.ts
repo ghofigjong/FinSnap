@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
     const result: ScanResult = { success: true, items };
     return jsonResponse(result);
   } catch (error: any) {
-    console.error('Scan error:', error);
+    console.error('[scan] Error:', {
+      message: error?.message,
+      stack: error?.stack,
+      cause: error?.cause,
+    });
     return errorResponse(error.message || 'Failed to scan image', 500);
   }
 }

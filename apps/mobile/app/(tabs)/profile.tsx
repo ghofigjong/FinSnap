@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -31,7 +31,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View style={styles.avatar}>
           <Ionicons name="person" size={48} color={colors.textMuted} />
@@ -94,7 +94,7 @@ export default function ProfileScreen() {
       </View>
 
       <Text style={styles.version}>FinSnap v1.0.0</Text>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -102,7 +102,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  content: {
     padding: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   header: {
     alignItems: 'center',
@@ -152,7 +155,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   signOutContainer: {
-    marginTop: 'auto',
+    marginTop: spacing.xl,
     marginBottom: spacing.md,
   },
   version: {
