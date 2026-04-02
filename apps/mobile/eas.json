@@ -1,4 +1,7 @@
 {
+  "cli": {
+    "appVersionSource": "local"
+  },
   "build": {
     "development": {
       "developmentClient": true,
@@ -7,9 +10,22 @@
     "preview": {
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EAS_BUILD_MONOREPO_ROOT": "../..",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://uojmqcvesifctihdmjte.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvam1xY3Zlc2lmY3RpaGRtanRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NzMxODgsImV4cCI6MjA4NDA0OTE4OH0.teyqwMrV4c_WiBDZ52MU59TiJ0KCxJ6_XzLXJ5LaqU8",
+        "EXPO_PUBLIC_API_URL": "https://fin-snap-kdgrepiu2-jocephs-projects.vercel.app"
       }
     },
-    "production": {}
+    "production": {
+      "env": {
+        "EAS_BUILD_MONOREPO_ROOT": "../..",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://uojmqcvesifctihdmjte.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvam1xY3Zlc2lmY3RpaGRtanRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NzMxODgsImV4cCI6MjA4NDA0OTE4OH0.teyqwMrV4c_WiBDZ52MU59TiJ0KCxJ6_XzLXJ5LaqU8",
+        "EXPO_PUBLIC_API_URL": "https://fin-snap-kdgrepiu2-jocephs-projects.vercel.app"
+      }
+    }
   },
   "submit": {
     "production": {}

@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@finsnap/shared": "file:../../packages/shared",
     "@expo/vector-icons": "^15.0.3",
     "@supabase/supabase-js": "^2.39.0",
     "babel-plugin-module-resolver": "^5.0.2",
