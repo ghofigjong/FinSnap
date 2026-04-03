@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   getAISettings,
   saveAISettings,
 } from '../src/lib/aiSettings';
+import { colors, fontSize, fontWeight, spacing, borderRadius } from '../src/constants/theme';
 
 const GEMINI_MODELS: { value: GeminiModel; label: string; description: string }[] = [
   { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', description: 'Fastest, recommended. Free tier.' },
@@ -26,45 +27,36 @@ const GEMINI_MODELS: { value: GeminiModel; label: string; description: string }[
   { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', description: 'Latest generation, best accuracy.' },
   { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite', description: 'Lightest 2.5 model, highest rate limits.' },
 ];
-import { colors, fontSize, fontWeight, spacing, borderRadius } from '../src/constants/theme';
 
-const PROVIDERS: { value: AIProvider; label: string; icon: string; description: string; keyUrl: string; keyPlaceholder: string }[] = [
+const PROVIDERS: { value: AIProvider; label: string; icon: string; description: string }[] = [
   {
-    value: 'gemini',
-    label: 'Google Gemini',
-    icon: 'sparkles-outline',
-    description: 'Free tier: 1,500 req/day. Gemini 2.0 Flash.',
-    keyUrl: 'https://aistudio.google.com/app/apikey',
-    keyPlaceholder: 'AIza...',
+    value: 'finsnap',
+    label: 'FinSnap AI (Default)',
+    icon: 'flash-outline',
+    description: '3 free scans/day powered by Gemini. No setup needed.',
   },
   {
-    value: 'openai',
-    label: 'OpenAI',
-    icon: 'chatbubble-ellipses-outline',
-    description: 'GPT-4o Vision. Pay-per-use.',
-    keyUrl: 'https://platform.openai.com/api-keys',
-    keyPlaceholder: 'sk-...',
+    value: 'gemini',
+    label: 'My Gemini Key',
+    icon: 'sparkles-outline',
+    description: 'Use your own API key for unlimited scanning.',
   },
   {
     value: 'ocr',
-    label: 'OCR Only (Free)',
+    label: 'OCR Only (Offline)',
     icon: 'scan-outline',
-    description: 'No API key needed. Basic text extraction.',
-    keyUrl: '',
-    keyPlaceholder: '',
+    description: 'Free on-device text extraction. No key required.',
   },
 ];
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<AISettings>({
-    provider: 'gemini',
+    provider: 'finsnap',
     geminiApiKey: '',
     geminiModel: 'gemini-2.0-flash',
-    openaiApiKey: '',
     currency: 'USD',
   });
   const [showGeminiKey, setShowGeminiKey] = useState(false);
-  const [showOpenAIKey, setShowOpenAIKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -99,10 +91,28 @@ export default function SettingsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* AI Provider */}
-      <Text style={styles.sectionTitle}>AI Provider</Text>
+      <Text style={styles.sectionTitle}>Scanning Method</Text>
       <Text style={styles.sectionSubtitle}>
         Choose how receipts and statements are analyzed.
       </Text>
+
+      {/* Pro upgrade card */}
+      <View style={styles.proCard}>
+        <View style={styles.proCardHeader}>
+          <Ionicons name="star" size={18} color={colors.warning} />
+          <Text style={styles.proCardTitle}>FinSnap Pro — $2.99/month</Text>
+        </View>
+        <Text style={styles.proCardBody}>
+          Upgrade for 25 AI scans/day using FinSnap's key. No setup, no API key needed.
+        </Text>
+        <TouchableOpacity
+          style={styles.proCardBtn}
+          onPress={() => Alert.alert('Coming Soon', 'Pro subscriptions will be available in the next update.')}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.proCardBtnText}>Upgrade to Pro</Text>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.providerList}>
         {PROVIDERS.map(provider => (
@@ -138,18 +148,12 @@ export default function SettingsScreen() {
         ))}
       </View>
 
-      {/* API Keys */}
-      {settings.provider !== 'ocr' && (
-        <>
-          <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>API Keys</Text>
-          <Text style={styles.sectionSubtitle}>
-            Keys are stored securely on your device only.
-          </Text>
-        </>
-      )}
-
       {settings.provider === 'gemini' && (
         <View style={styles.keySection}>
+          <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>Your Gemini API Key</Text>
+          <Text style={[styles.sectionSubtitle, { marginBottom: spacing.sm }]}>
+            Stored securely on your device only. Never sent to FinSnap.
+          </Text>
           <TextInput
             label="Gemini API Key"
             value={settings.geminiApiKey}
@@ -206,42 +210,11 @@ export default function SettingsScreen() {
         </View>
       )}
 
-      {settings.provider === 'openai' && (
-        <View style={styles.keySection}>
-          <TextInput
-            label="OpenAI API Key"
-            value={settings.openaiApiKey}
-            onChangeText={v => setSettings(s => ({ ...s, openaiApiKey: v }))}
-            placeholder="sk-..."
-            placeholderTextColor={colors.textMuted}
-            secureTextEntry={!showOpenAIKey}
-            autoCapitalize="none"
-            autoCorrect={false}
-            rightIcon={
-              <TouchableOpacity onPress={() => setShowOpenAIKey(v => !v)}>
-                <Ionicons
-                  name={showOpenAIKey ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={colors.textMuted}
-                />
-              </TouchableOpacity>
-            }
-          />
-          <TouchableOpacity
-            style={styles.getKeyLink}
-            onPress={() => Linking.openURL('https://platform.openai.com/api-keys')}
-          >
-            <Ionicons name="open-outline" size={14} color={colors.primary} />
-            <Text style={styles.getKeyLinkText}>Get an OpenAI API key</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       {settings.provider === 'ocr' && (
         <View style={styles.ocrNote}>
           <Ionicons name="information-circle-outline" size={20} color={colors.info} />
           <Text style={styles.ocrNoteText}>
-            OCR mode uses free on-device text extraction to read amounts and merchants from images. No API key required. Works offline, but accuracy is lower than AI-powered scanning — best used as a fallback.
+            OCR mode uses free on-device text extraction. No API key required — works offline, but accuracy is lower than AI scanning.
           </Text>
         </View>
       )}
@@ -400,6 +373,42 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     flex: 1,
     lineHeight: 20,
+  },
+  proCard: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    borderWidth: 1.5,
+    borderColor: colors.warning,
+    marginBottom: spacing.md,
+  },
+  proCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  proCardTitle: {
+    color: colors.warning,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  proCardBody: {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+    marginBottom: spacing.md,
+  },
+  proCardBtn: {
+    backgroundColor: colors.warning,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  proCardBtnText: {
+    color: colors.black,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
   saveButton: {
     backgroundColor: colors.primary,

@@ -37,7 +37,9 @@ export async function apiRequest<T>(
         ? 'Server error — the image may be too large or the request timed out. Try again with a smaller image.'
         : `Request failed (${response.status})`,
     }));
-    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+    const err = new Error(error.error || `HTTP error! status: ${response.status}`) as any;
+    err.status = response.status;
+    throw err;
   }
 
   return response.json();

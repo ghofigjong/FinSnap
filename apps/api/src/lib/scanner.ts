@@ -1,9 +1,8 @@
 import { ScannedLineItem } from '@finsnap/shared';
 import { analyzeWithGemini } from './gemini';
-import { analyzeWithOpenAI } from './openai';
 import { analyzeWithOCR } from './ocr';
 
-export type ScanProvider = 'gemini' | 'openai' | 'ocr';
+export type ScanProvider = 'finsnap' | 'gemini' | 'ocr';
 
 export async function analyzeImage(
   base64Image: string,
@@ -12,13 +11,16 @@ export async function analyzeImage(
   geminiModel?: string
 ): Promise<ScannedLineItem[]> {
   switch (provider) {
+    case 'finsnap': {
+      // Use the embedded server-side key — never exposed to the client
+      const embeddedKey = process.env.GEMINI_API_KEY;
+      if (!embeddedKey) throw new Error('FinSnap scanning is temporarily unavailable. Please try again later or use your own API key.');
+      return analyzeWithGemini(base64Image, embeddedKey, geminiModel);
+    }
+
     case 'gemini':
       if (!apiKey) throw new Error('Gemini API key is required. Configure it in AI Settings.');
       return analyzeWithGemini(base64Image, apiKey, geminiModel);
-
-    case 'openai':
-      if (!apiKey) throw new Error('OpenAI API key is required. Configure it in AI Settings.');
-      return analyzeWithOpenAI(base64Image, apiKey);
 
     case 'ocr':
       return analyzeWithOCR(base64Image);

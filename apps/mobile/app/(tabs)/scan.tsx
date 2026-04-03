@@ -158,7 +158,19 @@ export default function ScanScreen() {
         Alert.alert('Scan Failed', response.error || 'Could not extract items from image');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to scan image');
+      if (error?.status === 429) {
+        Alert.alert(
+          'Daily Limit Reached',
+          error.message,
+          [
+            { text: 'Use My Own Key', onPress: () => router.push('/settings') },
+            { text: 'Upgrade to Pro', onPress: () => router.push('/settings') },
+            { text: 'Cancel', style: 'cancel' },
+          ]
+        );
+      } else {
+        Alert.alert('Error', error.message || 'Failed to scan image');
+      }
     } finally {
       setScanning(false);
     }
