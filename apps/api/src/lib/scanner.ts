@@ -13,9 +13,10 @@ export async function analyzeImage(
   switch (provider) {
     case 'finsnap': {
       // Use the embedded server-side key — never exposed to the client
+      // Always use gemini-2.5-flash-lite for cost efficiency
       const embeddedKey = process.env.GEMINI_API_KEY;
       if (!embeddedKey) throw new Error('FinSnap scanning is temporarily unavailable. Please try again later or use your own API key.');
-      return analyzeWithGemini(base64Image, embeddedKey, geminiModel);
+      return analyzeWithGemini(base64Image, embeddedKey, 'gemini-2.5-flash-lite');
     }
 
     case 'gemini':
