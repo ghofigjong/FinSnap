@@ -36,7 +36,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: 'Is my data secure?',
-    a: 'Yes — your transactions are stored in a secure Supabase database with row-level security. Your AI API keys are stored only on your device.',
+    a: 'Yes — your transactions are stored in a secure database with row-level security. Your AI API keys are stored only on your device.',
   },
 ];
 

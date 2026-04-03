@@ -94,6 +94,15 @@ export default function RootLayout() {
               headerTitleStyle: { fontWeight: '600' },
             }}
           />
+          <Stack.Screen
+            name="add-transaction"
+            options={{
+              title: 'Add Transaction',
+              headerStyle: { backgroundColor: colors.background },
+              headerTintColor: colors.text,
+              headerTitleStyle: { fontWeight: '600' },
+            }}
+          />
         </Stack>
           </CurrencyProvider>
       </AuthProvider>
