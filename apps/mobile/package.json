@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@finsnap/shared": "file:../../packages/shared",
     "@expo/vector-icons": "^15.0.3",
+    "@finsnap/shared": "file:../../packages/shared",
     "@react-native-community/datetimepicker": "^8.2.0",
     "@react-native-ml-kit/text-recognition": "^2.0.0",
     "@supabase/supabase-js": "^2.39.0",
@@ -31,6 +31,7 @@
     "react": "19.1.0",
     "react-native": "0.81.5",
     "react-native-gesture-handler": "^2.30.0",
+    "react-native-purchases": "^9.15.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",

@@ -9,8 +9,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSize, fontWeight, spacing, borderRadius } from '../src/constants/theme';
 
-const APP_VERSION = '1.0.0';
-const BUILD = '1';
+const APP_VERSION = '1.0.2';
+const BUILD = '3';
 
 const LINKS: { icon: string; label: string; url: string }[] = [
   { icon: 'document-text-outline', label: 'Terms of Service', url: 'https://finsnap.app/terms' },
