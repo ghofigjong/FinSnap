@@ -20,6 +20,7 @@ import { apiRequest } from '../../src/lib/api';
 import { Button } from '../../src/components';
 import { ScannedLineItem, ScanResult, formatCurrency, CATEGORY_LABELS, CATEGORY_ICONS, EXPENSE_CATEGORIES, INCOME_CATEGORIES, TransactionCategory } from '@finsnap/shared';
 import { getAISettings, isAISettingsConfigured, getApiKeyForProvider, AISettings } from '../../src/lib/aiSettings';
+import { analyzeWithMLKit } from '../../src/lib/mlkitOcr';
 import { useCurrency } from '../../src/contexts/CurrencyContext';
 import { colors, fontSize, fontWeight, spacing, borderRadius } from '../../src/constants/theme';
 
@@ -107,11 +108,11 @@ export default function ScanScreen() {
     if (!result.canceled && result.assets[0]) {
       setImage(result.assets[0].uri);
       setEditableItems([]);
-      scanImage(result.assets[0].base64!);
+      scanImage(result.assets[0].base64!, result.assets[0].uri);
     }
   };
 
-  const scanImage = async (base64: string) => {
+  const scanImage = async (base64: string, uri: string) => {
     if (!session?.access_token) {
       Alert.alert('Error', 'Please sign in to scan receipts');
       return;
@@ -133,6 +134,13 @@ export default function ScanScreen() {
 
     setScanning(true);
     try {
+      // OCR runs on-device via Google ML Kit — no server call needed
+      if (settings.provider === 'ocr') {
+        const items = await analyzeWithMLKit(uri);
+        setEditableItems(buildEditableItems(items));
+        return;
+      }
+
       const response = await apiRequest<ScanResult>('/api/scan', {
         method: 'POST',
         body: {
