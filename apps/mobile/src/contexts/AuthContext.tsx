@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { initializePurchases, identifyPurchasesUser, resetPurchasesUser } from '../lib/purchases';
 
 interface AuthContextType {
   user: User | null;
@@ -19,11 +20,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    initializePurchases();
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) identifyPurchasesUser(session.user.id);
     });
 
     // Listen for auth changes
@@ -32,6 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        if (session?.user) identifyPurchasesUser(session.user.id);
       }
     );
 
@@ -60,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    await resetPurchasesUser();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

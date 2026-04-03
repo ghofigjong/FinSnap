@@ -19,6 +19,8 @@ import {
   getAISettings,
   saveAISettings,
 } from '../src/lib/aiSettings';
+import { checkProStatus, purchasePro, restorePurchases, syncPlanToSupabase } from '../src/lib/purchases';
+import { useAuth } from '../src/contexts/AuthContext';
 import { colors, fontSize, fontWeight, spacing, borderRadius } from '../src/constants/theme';
 
 const GEMINI_MODELS: { value: GeminiModel; label: string; description: string }[] = [
@@ -50,6 +52,7 @@ const PROVIDERS: { value: AIProvider; label: string; icon: string; description: 
 ];
 
 export default function SettingsScreen() {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<AISettings>({
     provider: 'finsnap',
     geminiApiKey: '',
@@ -59,10 +62,14 @@ export default function SettingsScreen() {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState(false);
+  const [purchasingPro, setPurchasingPro] = useState(false);
+  const [restoringPro, setRestoringPro] = useState(false);
 
   useEffect(() => {
-    getAISettings().then(s => {
+    Promise.all([getAISettings(), checkProStatus()]).then(([s, pro]) => {
       setSettings(s);
+      setIsPro(pro);
       setLoading(false);
     });
   }, []);
@@ -75,6 +82,34 @@ export default function SettingsScreen() {
     } catch {
       Alert.alert('Error', 'Failed to save settings.');
       setSaving(false);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    setPurchasingPro(true);
+    try {
+      const pro = await purchasePro();
+      setIsPro(pro);
+      if (pro && user?.id) await syncPlanToSupabase(user.id, true);
+      if (pro) Alert.alert('Welcome to Pro!', 'You now have 25 AI scans per day.');
+    } catch (e: any) {
+      if (!e.userCancelled) Alert.alert('Purchase failed', e.message ?? 'Something went wrong.');
+    } finally {
+      setPurchasingPro(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setRestoringPro(true);
+    try {
+      const pro = await restorePurchases();
+      setIsPro(pro);
+      if (pro && user?.id) await syncPlanToSupabase(user.id, true);
+      Alert.alert(pro ? 'Pro restored!' : 'No purchases found', pro ? 'Your Pro subscription is active.' : 'No previous Pro purchase was found.');
+    } catch (e: any) {
+      Alert.alert('Restore failed', e.message ?? 'Something went wrong.');
+    } finally {
+      setRestoringPro(false);
     }
   };
 
@@ -101,16 +136,42 @@ export default function SettingsScreen() {
         <View style={styles.proCardHeader}>
           <Ionicons name="star" size={18} color={colors.warning} />
           <Text style={styles.proCardTitle}>FinSnap Pro — $2.99/month</Text>
+          {isPro && (
+            <View style={styles.proActiveBadge}>
+              <Text style={styles.proActiveBadgeText}>Active</Text>
+            </View>
+          )}
         </View>
         <Text style={styles.proCardBody}>
-          Upgrade for 25 AI scans/day using FinSnap's key. No setup, no API key needed.
+          {isPro
+            ? 'You have 25 AI scans/day. Thank you for supporting FinSnap!'
+            : 'Upgrade for 25 AI scans/day using FinSnap\'s key. No setup, no API key needed.'}
         </Text>
+        {!isPro && (
+          <TouchableOpacity
+            style={[styles.proCardBtn, purchasingPro && { opacity: 0.6 }]}
+            onPress={handleUpgrade}
+            disabled={purchasingPro}
+            activeOpacity={0.8}
+          >
+            {purchasingPro ? (
+              <ActivityIndicator color={colors.black} size="small" />
+            ) : (
+              <Text style={styles.proCardBtnText}>Upgrade to Pro</Text>
+            )}
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
-          style={styles.proCardBtn}
-          onPress={() => Alert.alert('Coming Soon', 'Pro subscriptions will be available in the next update.')}
-          activeOpacity={0.8}
+          style={styles.restoreLink}
+          onPress={handleRestore}
+          disabled={restoringPro}
+          activeOpacity={0.7}
         >
-          <Text style={styles.proCardBtnText}>Upgrade to Pro</Text>
+          {restoringPro ? (
+            <ActivityIndicator color={colors.textMuted} size="small" />
+          ) : (
+            <Text style={styles.restoreLinkText}>Restore purchases</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -409,6 +470,26 @@ const styles = StyleSheet.create({
     color: colors.black,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
+  },
+  proActiveBadge: {
+    backgroundColor: colors.success,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    marginLeft: spacing.xs,
+  },
+  proActiveBadgeText: {
+    color: colors.white,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+  },
+  restoreLink: {
+    alignItems: 'center',
+    paddingTop: spacing.sm,
+  },
+  restoreLinkText: {
+    color: colors.textMuted,
+    fontSize: fontSize.xs,
   },
   saveButton: {
     backgroundColor: colors.primary,
